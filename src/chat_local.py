@@ -121,7 +121,7 @@ def start_chat():
         verbose=False
     )
 
-    print("\n AI Document Assistant ready!")
+    print("\n Hi, Welcome to your AI Policy Assistant!")
     print("Ask questions about your documents or type 'exit' to quit\n")
     
     while True:

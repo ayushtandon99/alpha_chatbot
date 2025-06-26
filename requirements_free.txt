@@ -1,3 +1,8 @@
-faiss-cpu
-sentence-transformers
 langchain
+langchain-community
+langchain-huggingface
+transformers
+faiss-cpu
+PyPDF2
+docx2txt
+python-docx

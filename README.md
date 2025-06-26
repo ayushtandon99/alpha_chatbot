@@ -1,5 +1,5 @@
 
-# 🧠 AI Policy Assistant Hackathon Starter Kit
+# AI Policy Assistant Hackathon Starter Kit
 
 This starter kit supports two development paths:
 - **Path A**: Free and open-source (no API keys required)
