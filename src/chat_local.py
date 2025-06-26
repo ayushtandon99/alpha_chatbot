@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 def load_llm():
     """Load HuggingFace LLM pipeline"""
-    print("🔄 Loading LLM: google/flan-t5-base...")
+    print("Loading LLM: google/flan-t5-base...")
     try:
         pipe = pipeline(
             "text2text-generation", 
@@ -24,12 +24,12 @@ def load_llm():
         )
         return HuggingFacePipeline(pipeline=pipe)
     except Exception as e:
-        print(f"❌ Error loading LLM: {e}")
+        print(f"Error loading LLM: {e}")
         return None
 
 def load_faiss_index():
     """Load FAISS index with matching embeddings"""
-    print("📂 Loading FAISS index...")
+    print("Loading FAISS index...")
     try:
         # Use the same embedding model as ingest.py
         embeddings = HuggingFaceEmbeddings(
@@ -39,7 +39,7 @@ def load_faiss_index():
         )
         
         if not os.path.exists("faiss_index"):
-            print("❌ FAISS index not found! Run ingest.py first.")
+            print("FAISS index not found! Run ingest.py first.")
             return None
             
         db = FAISS.load_local(
@@ -47,10 +47,10 @@ def load_faiss_index():
             embeddings, 
             allow_dangerous_deserialization=True
         )
-        print("✅ FAISS index loaded successfully")
+        print("FAISS index loaded successfully")
         return db
     except Exception as e:
-        print(f"❌ Error loading FAISS index: {e}")
+        print(f"Error loading FAISS index: {e}")
         return None
 
 def init_memory():
@@ -72,9 +72,9 @@ def load_chat_history(memory, history_file="chat_history.pkl"):
                         {"question": entry["question"]}, 
                         {"answer": entry["answer"]}
                     )
-                print(f"🧠 Chat history loaded ({len(history)} entries)")
+                print(f"Chat history loaded ({len(history)} entries)")
         except Exception as e:
-            print(f"⚠️ Could not load chat history: {e}")
+            print(f"Could not load chat history: {e}")
 
 def save_chat_history(memory, history_file="chat_history.pkl"):
     """Save chat history"""
@@ -89,13 +89,13 @@ def save_chat_history(memory, history_file="chat_history.pkl"):
         
         with open(history_file, "wb") as f:
             pickle.dump(history, f)
-        print("💾 Chat history saved")
+        print("Chat history saved")
     except Exception as e:
-        print(f"⚠️ Could not save chat history: {e}")
+        print(f"Could not save chat history: {e}")
 
 def start_chat():
     """Main chat function"""
-    print("🚀 Initializing AI Document Assistant...")
+    print("Initializing AI Document Assistant...")
     
     # Load components
     llm = load_llm()
@@ -121,8 +121,8 @@ def start_chat():
         verbose=False
     )
 
-    print("\n🤖 AI Document Assistant ready!")
-    print("💡 Ask questions about your documents or type 'exit' to quit\n")
+    print("\n AI Document Assistant ready!")
+    print("Ask questions about your documents or type 'exit' to quit\n")
     
     while True:
         try:
@@ -130,21 +130,21 @@ def start_chat():
             
             if question.lower() in ["exit", "quit", "bye"]:
                 save_chat_history(memory)
-                print("👋 Goodbye! Chat history saved.")
+                print("Goodbye! Chat history saved.")
                 break
             
             if not question:
                 continue
                 
-            print("🔍 Searching documents...")
+            print("Searching documents...")
             result = qa_chain.invoke({"question": question})
             
             answer = result.get('answer', 'Sorry, I could not find an answer.')
-            print(f"\n🤖 Assistant: {answer}")
+            print(f"\n Assistant: {answer}")
             
             # Show sources
             if result.get('source_documents'):
-                print("\n📚 Sources:")
+                print("\n Sources:")
                 sources = set()
                 for doc in result['source_documents'][:2]:
                     source = doc.metadata.get('source', 'Unknown')
@@ -155,11 +155,11 @@ def start_chat():
             print()
             
         except KeyboardInterrupt:
-            print("\n\n👋 Interrupted. Saving chat history...")
+            print("\n\n Interrupted. Saving chat history...")
             save_chat_history(memory)
             break
         except Exception as e:
-            print(f"\n⚠️ Error: {str(e)}\n")
+            print(f"\n Error: {str(e)}\n")
 
 if __name__ == "__main__":
     start_chat()

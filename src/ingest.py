@@ -9,10 +9,10 @@ import docx2txt
 def load_documents(directory):
     """Load documents from the specified directory"""
     docs = []
-    print(f"📂 Loading documents from: {directory}")
+    print(f"Loading documents from: {directory}")
     
     if not os.path.exists(directory):
-        print(f"❌ Directory {directory} not found!")
+        print(f"Directory {directory} not found!")
         return docs
     
     for filename in os.listdir(directory):
@@ -34,14 +34,14 @@ def load_documents(directory):
                     page_content=text, 
                     metadata={"source": filename, "type": filename.split('.')[-1]}
                 ))
-                print(f"✅ Loaded: {filename}")
+                print(f"Loaded: {filename}")
             else:
-                print(f"⚠️ Empty content: {filename}")
+                print(f"Empty content: {filename}")
                 
         except Exception as e:
-            print(f"❌ Error loading {filename}: {str(e)}")
+            print(f"Error loading {filename}: {str(e)}")
     
-    print(f"📄 Total documents loaded: {len(docs)}")
+    print(f"Total documents loaded: {len(docs)}")
     return docs
 
 def extract_text_from_txt(txt_path):
@@ -68,41 +68,43 @@ def extract_text_from_docx(docx_path):
         return text
     except ImportError:
         # Fallback to python-docx
-        doc = docx.Document(docx_path)
+        doc = docx2txt.Document(docx_path)
         return "\n".join([para.text for para in doc.paragraphs])
 
 def embed_and_store(docs):
     """Create embeddings and store in FAISS index"""
     if not docs:
-        print("❌ No documents to process!")
+        print("No documents to process!")
         return
     
-    print("🔄 Initializing embedding model...")
+    print("Initializing embedding model...")
     model = HuggingFaceEmbeddings(
         model_name="all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'},
         encode_kwargs={'normalize_embeddings': True}
     )
     
-    print("✂️ Splitting documents into chunks...")
+    print("Splitting documents into chunks...")
     text_splitter = CharacterTextSplitter(
         chunk_size=1000, 
         chunk_overlap=200,
         separator="\n"
     )
     chunks = text_splitter.split_documents(docs)
-    print(f"📑 Created {len(chunks)} chunks")
+    print(f"Created {len(chunks)} chunks")
     
-    print("🔄 Creating FAISS index...")
+    print("Creating FAISS index...")
     db = FAISS.from_documents(chunks, embedding=model)
     
-    print("💾 Saving FAISS index...")
+    print("Saving FAISS index...")
     db.save_local("faiss_index")
-    print("✅ Embedding complete. Vector index saved to 'faiss_index/'")
+    print("Embedding complete. Vector index saved to 'faiss_index/'")
 
 if __name__ == "__main__":
-    documents = load_documents("../docs")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    docs_dir = os.path.join(base_dir, "../docs")
+    documents = load_documents(docs_dir)
     if documents:
         embed_and_store(documents)
     else:
-        print("❌ No documents found to process!")
+        print("No documents found to process!")
