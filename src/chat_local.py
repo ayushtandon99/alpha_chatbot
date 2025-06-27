@@ -93,73 +93,91 @@ def save_chat_history(memory, history_file="chat_history.pkl"):
     except Exception as e:
         print(f"Could not save chat history: {e}")
 
+def get_translation_pipeline():
+    return pipeline("text2text-generation", model="google/flan-t5-base", max_length=256)
+
+def translate_text(pipe, text, target_language):
+    prompt = f"Translate to {target_language}: {text}"
+    try:
+        result = pipe(prompt)
+        return result[0]['generated_text'].strip()
+    except Exception as e:
+        print(f"Translation error: {e}")
+        return text  # Fallback to original
+
 def start_chat():
-    """Main chat function"""
     print("Initializing AI Document Assistant...")
-    
+
     # Load components
     llm = load_llm()
     if not llm:
         return
-    
+
     db = load_faiss_index()
     if not db:
         return
-    
+
     memory = init_memory()
     load_chat_history(memory)
-    
+
+    # Ask user for preferred language
+    print("\nAvailable languages: English, Spanish, French, German")
+    user_language = input("Choose your preferred language: ").strip()
+    if not user_language:
+        user_language = "English"
+
+    print(f"Selected Language: {user_language}")
+    translator = get_translation_pipeline()
+
     # Setup QA chain
     qa_chain = ConversationalRetrievalChain.from_llm(
         llm=llm,
-        retriever=db.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": 3}
-        ),
+        retriever=db.as_retriever(search_type="similarity", search_kwargs={"k": 3}),
         memory=memory,
         return_source_documents=True,
         verbose=False
     )
 
-    print("\n Hi, Welcome to your AI Policy Assistant!")
+    print("\nHi, Welcome to your AI Policy Assistant!")
     print("Ask questions about your documents or type 'exit' to quit\n")
-    
+
     while True:
         try:
-            question = input("You: ").strip()
-            
-            if question.lower() in ["exit", "quit", "bye"]:
+            user_input = input(f"You ({user_language}): ").strip()
+            if user_input.lower() in ["exit", "quit", "bye"]:
                 save_chat_history(memory)
                 print("Goodbye! Chat history saved.")
                 break
-            
-            if not question:
+
+            if not user_input:
                 continue
-                
+
+            # Translate user question to English
+            translated_question = translate_text(translator, user_input, "English")
+
             print("Searching documents...")
-            result = qa_chain.invoke({"question": question})
-            
-            answer = result.get('answer', 'Sorry, I could not find an answer.')
-            print(f"\n Assistant: {answer}")
-            
+            result = qa_chain.invoke({"question": translated_question})
+
+            answer = result.get("answer", "Sorry, I could not find an answer.")
+
+            # Translate assistant answer back to user's language
+            translated_answer = translate_text(translator, answer, user_language)
+            print(f"\nAssistant ({user_language}): {translated_answer}")
+
             # Show sources
-            if result.get('source_documents'):
-                print("\n Sources:")
-                sources = set()
-                for doc in result['source_documents'][:2]:
-                    source = doc.metadata.get('source', 'Unknown')
-                    sources.add(source)
+            if result.get("source_documents"):
+                print("\nSources:")
+                sources = {doc.metadata.get("source", "Unknown") for doc in result["source_documents"][:2]}
                 for i, source in enumerate(sources, 1):
                     print(f"  {i}. {source}")
-            
             print()
-            
+
         except KeyboardInterrupt:
-            print("\n\n Interrupted. Saving chat history...")
+            print("\nInterrupted. Saving chat history...")
             save_chat_history(memory)
             break
         except Exception as e:
-            print(f"\n Error: {str(e)}\n")
+            print(f"\nError: {str(e)}\n")
 
 if __name__ == "__main__":
     start_chat()
